@@ -32,3 +32,6 @@ The T5-small architecture, a powerful encoder-decoder-based transformer model, i
 ### 🤖 Chatbot Integration:
 The fine-tuned model is integrated into a web-based chatbot UI that allows users to interact and receive intelligent, context-aware responses based on the domain-specific knowledge learned during training.
 
+![image](https://github.com/user-attachments/assets/239e08be-1248-4393-855b-e940eaeda453)
+
+
