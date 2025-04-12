@@ -1,242 +1,524 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
   <head>
     <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Chat with Chan</title>
     <style>
-      body {
-        font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
-        font-size: 16px;
+      * {
+        box-sizing: border-box;
         margin: 0;
-        background-color: #f7f7f8;
+        padding: 0;
+      }
+
+      body {
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+        background-color: #f5f5f5;
+        color: #202123;
+        line-height: 1.5;
         padding: 20px;
+        display: flex;
+        justify-content: center;
+        min-height: 100vh;
       }
 
       .container {
         display: flex;
-        align-items: flex-start;
-        gap: 40px;
+        width: 100%;
+        max-width: 1200px;
+        gap: 20px;
+        height: calc(100vh - 40px);
       }
 
       .sidebar {
+        width: 280px;
+        background-color: #ffffff;
+        border-radius: 12px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
         display: flex;
         flex-direction: column;
-        align-items: center;
-        gap: 20px;
+        padding: 16px;
+        transition: transform 0.3s ease;
+      }
+
+      .sidebar.collapsed {
+        transform: translateX(-100%);
+        width: 0;
+        padding: 0;
+        overflow: hidden;
       }
 
       .logo {
-        width: 100px;
-        height: 100px;
-        object-fit: contain;
-      }
-
-      .history {
-        width: 400px;
-        max-height: 400px;
-        overflow-y: auto;
-        background-color: #ffffff;
-        border: 1px solid #ddd;
-        border-radius: 10px;
-        padding: 10px;
-        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+        width: 48px;
+        height: 48px;
+        margin-bottom: 16px;
       }
 
       .history-header {
         display: flex;
         justify-content: space-between;
         align-items: center;
-        margin-bottom: 10px;
+        margin-bottom: 12px;
       }
 
       .history-header h3 {
-        margin: 0;
         font-size: 16px;
-        color: #333;
+        font-weight: 600;
       }
 
       .new-chat {
-        background-color: #007bff;
+        background-color: #10a37f;
         color: white;
         border: none;
-        border-radius: 50%;
-        width: 28px;
-        height: 28px;
+        border-radius: 8px;
+        width: 32px;
+        height: 32px;
         font-size: 20px;
         cursor: pointer;
         display: flex;
         align-items: center;
         justify-content: center;
+        transition: background-color 0.2s;
       }
 
       .new-chat:hover {
-        background-color: #0056b3;
+        background-color: #0d8c6b;
+      }
+
+      .history {
+        flex: 1;
+        overflow-y: auto;
+        padding-right: 8px;
       }
 
       .history-item {
-        padding: 6px 10px;
-        margin-bottom: 6px;
-        background-color: #f0f0f0;
-        border-radius: 6px;
+        padding: 10px 12px;
+        margin-bottom: 8px;
+        background-color: #f9f9f9;
+        border-radius: 8px;
         font-size: 14px;
         cursor: pointer;
+        transition: background-color 0.2s;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
       }
 
-      .history-item:hover {
-        background-color: #e0e0e0;
+      .history-item:hover,
+      .history-item.active {
+        background-color: #e6f3ff;
       }
 
       .content {
         flex: 1;
         display: flex;
         flex-direction: column;
-        align-items: center;
+        background-color: #ffffff;
+        border-radius: 12px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+        padding: 24px;
       }
 
-      h1 {
-        color: #333;
+      .header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 16px;
+      }
+
+      .header h1 {
+        font-size: 24px;
+        font-weight: 600;
+      }
+
+      .model-select {
+        padding: 8px;
+        border: 1px solid #e0e0e0;
+        border-radius: 8px;
+        font-size: 14px;
+        background-color: #fafafa;
+        cursor: pointer;
       }
 
       .chatbox {
-        width: 100%;
-        max-width: 600px;
-        height: 500px;
-        background-color: white;
-        border-radius: 10px;
-        border: 1px solid #ddd;
-        padding: 20px;
-        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+        flex: 1;
         overflow-y: auto;
-        margin-bottom: 10px;
+        margin-bottom: 16px;
+        padding-right: 8px;
+        scroll-behavior: smooth;
       }
 
       .message {
-        margin-bottom: 15px;
+        display: flex;
+        align-items: flex-start;
+        gap: 12px;
+        margin-bottom: 16px;
+        animation: fadeIn 0.3s ease;
+      }
+
+      .message-avatar {
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
+        flex-shrink: 0;
+      }
+
+      .message-content {
         padding: 12px 16px;
-        border-radius: 16px;
+        border-radius: 12px;
         max-width: 80%;
+        font-size: 15px;
         line-height: 1.4;
-        word-wrap: break-word;
+        position: relative;
       }
 
-      .user {
-        background-color: #daf0ff;
-        color: #004c99;
-        align-self: flex-end;
+      .user .message-content {
+        background-color: #10a37f;
+        color: white;
         margin-left: auto;
+        border-bottom-right-radius: 4px;
       }
 
-      .bot {
-        background-color: #f0f0f0;
-        color: #333;
-        align-self: flex-start;
-        margin-right: auto;
+      .bot .message-content {
+        background-color: #f1f1f1;
+        color: #202123;
+        border-bottom-left-radius: 4px;
+      }
+
+      .message-actions {
+        position: absolute;
+        top: 8px;
+        right: 8px;
+        opacity: 0;
+        transition: opacity 0.2s;
+      }
+
+      .message:hover .message-actions {
+        opacity: 1;
+      }
+
+      .copy-btn {
+        background: none;
+        border: none;
+        cursor: pointer;
+        color: #666;
+        font-size: 12px;
+      }
+
+      .typing-indicator {
+        display: none;
+        font-size: 14px;
+        color: #666;
+        margin-bottom: 16px;
+      }
+
+      .typing-indicator span {
+        animation: blink 1s infinite;
+      }
+
+      .typing-indicator span:nth-child(2) {
+        animation-delay: 0.2s;
+      }
+
+      .typing-indicator span:nth-child(3) {
+        animation-delay: 0.4s;
+      }
+
+      .welcome-message {
+        text-align: center;
+        color: #666;
+        font-size: 16px;
+        margin: 20px 0;
       }
 
       .input-area {
-        width: 100%;
-        max-width: 600px;
         display: flex;
-        gap: 10px;
+        gap: 12px;
+        padding: 12px;
+        background-color: #f9f9f9;
+        border-radius: 12px;
+        border: 1px solid #e0e0e0;
       }
 
-      input[type="text"] {
+      textarea {
         flex: 1;
         padding: 12px;
-        border-radius: 20px;
-        border: 1px solid #ccc;
-        outline: none;
-        font-size: 16px;
-      }
-
-      button {
-        padding: 12px 20px;
         border: none;
-        border-radius: 20px;
-        background-color: #007bff;
-        color: white;
-        font-size: 16px;
-        cursor: pointer;
-        transition: background-color 0.3s;
+        border-radius: 8px;
+        background: transparent;
+        font-size: 15px;
+        resize: none;
+        outline: none;
+        min-height: 40px;
+        max-height: 200px;
       }
 
-      button:hover {
-        background-color: #0056b3;
+      button.send-btn {
+        padding: 10px 20px;
+        background-color: #10a37f;
+        color: white;
+        border: none;
+        border-radius: 8px;
+        cursor: pointer;
+        transition: background-color 0.2s;
+      }
+
+      button.send-btn:hover {
+        background-color: #0d8c6b;
+      }
+
+      .toggle-sidebar {
+        display: none;
+        position: fixed;
+        top: 20px;
+        left: 20px;
+        background-color: #10a37f;
+        color: white;
+        border: none;
+        border-radius: 8px;
+        padding: 8px;
+        cursor: pointer;
+      }
+
+      @keyframes fadeIn {
+        from {
+          opacity: 0;
+          transform: translateY(10px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+
+      @keyframes blink {
+        50% {
+          opacity: 0;
+        }
+      }
+
+      @media (max-width: 768px) {
+        .container {
+          flex-direction: column;
+          height: auto;
+        }
+
+        .sidebar {
+          width: 100%;
+          max-height: 300px;
+          transform: translateX(0);
+          margin-bottom: 20px;
+        }
+
+        .sidebar.collapsed {
+          display: none;
+        }
+
+        .content {
+          width: 100%;
+        }
+
+        .toggle-sidebar {
+          display: block;
+        }
       }
     </style>
   </head>
   <body>
+    <button class="toggle-sidebar" id="toggleSidebar">☰</button>
     <div class="container">
-      <!-- Sidebar with logo and history -->
-      <div class="sidebar">
-        <img src="logo.jpg" alt="Logo" class="logo" />
-        <div class="history" id="history">
-          <div class="history-header">
-            <h3>History</h3>
-            <button class="new-chat" title="New Chat" id="newChat">+</button>
-          </div>
-          <!-- Chat history items will go here -->
+      <div class="sidebar" id="sidebar">
+        <img src="../static/logo.jpg" alt="Logo" class="logo" />
+        <div class="history-header">
+          <h3>Chat History</h3>
+          <button class="new-chat" title="New Chat" id="newChat">+</button>
         </div>
+        <div class="history" id="history"></div>
       </div>
-
-      <!-- Main chat content -->
       <div class="content">
-        <h1>Chat with Chan</h1>
-        <div class="chatbox" id="chatbox"></div>
+        <div class="header">
+          <h1>Chat with Chan</h1>
+          <select class="model-select" disabled>
+            <option>Chan (Default)</option>
+            <option>Other Model (Coming Soon)</option>
+          </select>
+        </div>
+        <div class="chatbox" id="chatbox">
+          <div class="welcome-message">
+            Welcome to Chan! How can I assist you today?
+          </div>
+        </div>
+        <div class="typing-indicator" id="typingIndicator">
+          Chan is typing<span>.</span><span>.</span><span>.</span>
+        </div>
         <div class="input-area">
-          <input type="text" id="message" placeholder="Type your message here..." />
-          <button id="send">Send</button>
+          <textarea id="message" placeholder="Type your message here..."></textarea>
+          <button class="send-btn" id="send">Send</button>
         </div>
       </div>
     </div>
 
     <script>
       const chatbox = document.getElementById("chatbox");
-      const message = document.getElementById("message");
-      const send = document.getElementById("send");
-      const history = document.getElementById("history");
+      const messageInput = document.getElementById("message");
+      const sendBtn = document.getElementById("send");
+      const historyContainer = document.getElementById("history");
       const newChatBtn = document.getElementById("newChat");
+      const typingIndicator = document.getElementById("typingIndicator");
+      const toggleSidebarBtn = document.getElementById("toggleSidebar");
+      const sidebar = document.getElementById("sidebar");
 
-      send.addEventListener("click", sendMessage);
-      message.addEventListener("keydown", function (e) {
-        if (e.key === "Enter") sendMessage();
+      let conversations = JSON.parse(localStorage.getItem("conversations")) || {};
+      let currentConversationId = null;
+
+      // Auto-resize textarea
+      messageInput.addEventListener("input", function () {
+        this.style.height = "auto";
+        this.style.height = `${this.scrollHeight}px`;
       });
 
-      newChatBtn.addEventListener("click", startNewChat);
+      // Send message
+// Send message
+    function sendMessage() {
+      const text = messageInput.value.trim();
+      if (!text) return;
+    
+      if (!currentConversationId) {
+        currentConversationId = Date.now().toString();
+        conversations[currentConversationId] = [];
+        addHistoryItem(text, currentConversationId);
+      }
+    
+      const userMessage = { role: "user", content: text };
+      conversations[currentConversationId].push(userMessage);
+      renderMessage(userMessage);
+      messageInput.value = "";
+      messageInput.style.height = "40px";
+      saveConversations();
+    
+      // Show typing indicator
+      typingIndicator.style.display = "block";
+    
+      // Call LLM API
+      fetch(`/get_response?message=${encodeURIComponent(text)}`, {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+        },
+      })
+        .then((response) => {
+          if (!response.ok) {
+            return response.json().then((err) => {
+              throw new Error(err.error || "Failed to fetch response");
+            });
+          }
+          return response.text(); // Expect plain text from Flask
+        })
+        .then((botResponse) => {
+          const botMessage = {
+            role: "bot",
+            content: botResponse || "No response received",
+          };
+          conversations[currentConversationId].push(botMessage);
+          renderMessage(botMessage);
+          typingIndicator.style.display = "none";
+          saveConversations();
+        })
+        .catch((error) => {
+          console.error("Error:", error.message);
+          const errorMessage = {
+            role: "bot",
+            content: `Error: ${error.message}`,
+          };
+          conversations[currentConversationId].push(errorMessage);
+          renderMessage(errorMessage);
+          typingIndicator.style.display = "none";
+          saveConversations();
+        });
+    }
 
-      function sendMessage() {
-        const userMessage = message.value.trim();
-        if (!userMessage) return;
+      // Render a message
+      function renderMessage(message) {
+        const messageDiv = document.createElement("div");
+        messageDiv.className = `message ${message.role}`;
+        messageDiv.innerHTML = `
+          <img src="${message.role === "user" ? "user-avatar.png" : "bot-avatar.png"}" alt="${message.role}" class="message-avatar" />
+          <div class="message-content">${message.content}</div>
+          ${message.role === "bot" ? '<div class="message-actions"><button class="copy-btn">Copy</button></div>' : ""}
+        `;
+        chatbox.appendChild(messageDiv);
+        chatbox.scrollTop = chatbox.scrollHeight;
 
-        const userDiv = document.createElement("div");
-        userDiv.className = "message user";
-        userDiv.innerHTML = userMessage;
-        chatbox.appendChild(userDiv);
-        message.value = "";
+        // Add copy functionality
+        if (message.role === "bot") {
+          messageDiv.querySelector(".copy-btn").addEventListener("click", () => {
+            navigator.clipboard.writeText(message.content);
+            alert("Copied to clipboard!");
+          });
+        }
+      }
 
-        // Add to history
+      // Add history item
+      function addHistoryItem(text, id) {
         const historyItem = document.createElement("div");
         historyItem.className = "history-item";
-        historyItem.innerText = userMessage;
-        history.appendChild(historyItem);
-
-        fetch("/get_response?message=" + encodeURIComponent(userMessage))
-          .then((response) => response.text())
-          .then((botMessage) => {
-            const botDiv = document.createElement("div");
-            botDiv.className = "message bot";
-            botDiv.innerHTML = botMessage;
-            chatbox.appendChild(botDiv);
-            chatbox.scrollTop = chatbox.scrollHeight;
-          });
+        historyItem.textContent = text.slice(0, 30) + (text.length > 30 ? "..." : "");
+        historyItem.dataset.id = id;
+        historyItem.addEventListener("click", () => loadConversation(id));
+        historyContainer.prepend(historyItem);
+        setActiveHistoryItem(id);
       }
 
+      // Load conversation
+      function loadConversation(id) {
+        currentConversationId = id;
+        chatbox.innerHTML = "";
+        conversations[id].forEach(renderMessage);
+        setActiveHistoryItem(id);
+      }
+
+      // Set active history item
+      function setActiveHistoryItem(id) {
+        document.querySelectorAll(".history-item").forEach((item) => {
+          item.classList.toggle("active", item.dataset.id === id);
+        });
+      }
+
+      // Save conversations to localStorage
+      function saveConversations() {
+        localStorage.setItem("conversations", JSON.stringify(conversations));
+      }
+
+      // Start new chat
       function startNewChat() {
-        chatbox.innerHTML = ""; // Clear chat window
-        message.value = ""; // Clear input box
-        // Optionally uncomment next line to clear history too:
-        // document.querySelectorAll('.history-item').forEach(item => item.remove());
+        currentConversationId = null;
+        chatbox.innerHTML = '<div class="welcome-message">Welcome to Chan! How can I assist you today?</div>';
+        messageInput.value = "";
+        document.querySelectorAll(".history-item").forEach((item) => item.classList.remove("active"));
       }
+
+      // Toggle sidebar
+      toggleSidebarBtn.addEventListener("click", () => {
+        sidebar.classList.toggle("collapsed");
+      });
+
+      // Event listeners
+      sendBtn.addEventListener("click", sendMessage);
+      messageInput.addEventListener("keydown", (e) => {
+        if (e.key === "Enter" && !e.shiftKey) {
+          e.preventDefault();
+          sendMessage();
+        }
+      });
+      newChatBtn.addEventListener("click", startNewChat);
+
+      // Load existing conversations
+      Object.keys(conversations).forEach((id) => {
+        const firstMessage = conversations[id].find((msg) => msg.role === "user");
+        if (firstMessage) {
+          addHistoryItem(firstMessage.content, id);
+        }
+      });
     </script>
   </body>
 </html>
